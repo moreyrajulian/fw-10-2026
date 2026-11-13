@@ -7,6 +7,7 @@ module testbench;
     reg resetn = 0;
     wire trap;
     reg [63:0]clock_counts ;
+    assign trap = u_top.u_picorv32.trap;
     always #5 clk = ~clk;
 
     top  u_top (

@@ -1,0 +1,24 @@
+make: Entering directory '/home/moreyrajulian/fw-10-2026/fw'
+python3 ..//fw/tools/check_load.py --hex build/fw.hex --log build/sim.log --sym build/bl.sym --sym build/app.sym
+[hex] build/fw.hex: 1301 palabras (0x00000000-0x00001453)
+[log] build/sim.log: init_memory() cargó 1301 palabras en memory_i
+[log] OK: lo que cargó el simulador coincide palabra por palabra con fw.hex
+
+Vector table del BL (la ejecuta el core: son instrucciones):
+  0x00000000  0140006f  j 0x00000014 <bl_reset_handler>        PROGADDR_RESET
+  0x00000004  0300006f  j 0x00000034 <bl_unexpected>           
+  0x00000008  02c0006f  j 0x00000034 <bl_unexpected>           
+  0x0000000c  0280006f  j 0x00000034 <bl_unexpected>           
+  0x00000010  0240006f  j 0x00000034 <bl_unexpected>           PROGADDR_IRQ (IRQs deshabilitadas)
+
+Header + vector table del FW en 0x00001000 (línea 1025 de fw.hex):
+  +0x00 magic         0x46345054 OK
+  +0x04 load_addr     0x00001000 OK
+  +0x08 image_size    0x00000454 (1108 B, hasta 0x00001453) OK
+  +0x0C image_crc     0x000000b9 (recalculado: 0x000000b9) OK
+  +0x10 initial_sp    0x00040000 <_stack_top> OK
+  +0x14 reset_handler 0x00001018 <Reset_Handler> OK
+  Reset_Handler según nm: 0x00001018 OK
+
+RESULTADO: OK
+make: Leaving directory '/home/moreyrajulian/fw-10-2026/fw'

@@ -2,7 +2,7 @@
 #  TP4 — BOOTLOADER + FW del TP anterior en UNA imagen
 #
 #  Este Makefile YA ESTÁ COMPLETO: lo que tienen que escribir son los linker
-#  scripts y el código del BL y del arranque del FW (buscar "TODO"). Igual
+#  scripts y el código del BL y del arranque del FW. Igual
 #  léanlo: en el hito 9 se pregunta qué hace cada paso.
 # =============================================================================
 #   make             build/bl.elf + build/app.elf -> build/fw.hex -> ../fw/fw.hex

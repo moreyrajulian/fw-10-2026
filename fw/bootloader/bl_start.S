@@ -1,7 +1,7 @@
 /*
  * bl_start.S — TP4 (Bloque 4): vector table + arranque mínimo del BOOTLOADER
  *
- * COMPLETAR los TODO (hitos 2 y 5 de la consigna).
+ * Vector table, arranque y transferencia al firmware.
  *
  * Datos de la plataforma (platform/rtl/top.v, parámetros de picorv32):
  *   - PROGADDR_RESET = 0x0000_0000: al salir de reset el core EJECUTA lo que hay ahí.
@@ -21,15 +21,23 @@
     .globl  _bl_vectors
     .type   _bl_vectors, @function
 _bl_vectors:
-    /* TODO (hito 2): la vector table.
-     *   - En 0x00 (PROGADDR_RESET): un salto a bl_reset_handler.
-     *   - En 0x10 (PROGADDR_IRQ):   un salto a bl_unexpected.
-     *   - 0x04, 0x08 y 0x0C no son vectores en PicoRV32: ¿qué conviene poner?
-     *   Pregunta: ¿por qué acá la vector table son INSTRUCCIONES y en Cortex-M
-     *   son DIRECCIONES? */
+    j       bl_reset_handler
+    j       bl_unexpected
+    j       bl_unexpected
+    j       bl_unexpected
+    j       bl_unexpected
 
     .size   _bl_vectors, . - _bl_vectors
     .option pop
+
+    /*
+     *   - 0x04, 0x08 y 0x0C no son vectores en PicoRV32: ¿qué conviene poner?
+     *   Conviene poner un salto hacia algún handler bl_unexpected que informa un error y detiene la ejecución
+     *   Pregunta: ¿por qué acá la vector table son INSTRUCCIONES y en Cortex-M
+     *   son DIRECCIONES? Se basa en lo que hace el hardware al arrancar, el PicoRV32
+     *   busca y ejecuta una instrucción en la dirección de reset. Mientras que el 
+     *   Cortex-M interpreta las primeras entradas como el valor inicial del stack y la dirección del handler de reset.
+     */
 
 /* ------------------------------------------------------------------------ */
 /*  Reset: init mínimo del BL                                               */
@@ -38,16 +46,22 @@ _bl_vectors:
     .globl  bl_reset_handler
     .type   bl_reset_handler, @function
 bl_reset_handler:
-    /* TODO (hito 2):
-     *   1) Cargar sp con _bl_stack_top (lo define bl.ld). ¿Por qué lo tiene que
-     *      hacer el software?
-     *   2) .data/.bss del BL: si el BL no usa variables globales, no hay nada
-     *      que copiar ni poner en cero (¿cómo garantizan que no las use?).
-     *   3) Llamar a bl_main(), que no vuelve.
-     */
-
-    j       bl_unexpected           /* si bl_main volviera (o mientras no esté hecho): FAIL */
+    la sp, _bl_stack_top
+    call bl_main
+    j       bl_unexpected          
     .size   bl_reset_handler, . - bl_reset_handler
+
+
+    /* 
+    *  Cargar sp con _bl_stack_top (lo define bl.ld). ¿Por qué lo tiene que
+    *  hacer el software?
+    *  El software prepara sp porque el core no lo inicializa
+
+    *  data/.bss del BL: si el BL no usa variables globales, no hay nada
+    *  que copiar ni poner en cero (¿cómo garantizan que no las use?)
+    *  los ASSERT del linker impiden datos estáticos modificables que necesiten copia o borrado
+    *   
+    */
 
 /* ------------------------------------------------------------------------ */
 /*  void bl_jump(uint32_t sp, uint32_t entry)  __attribute__((noreturn))    */
@@ -56,15 +70,18 @@ bl_reset_handler:
     .globl  bl_jump
     .type   bl_jump, @function
 bl_jump:
-    /* TODO (hito 5): pasarle el control al FW.
-     *   - Se llama desde C: ¿en qué registros llegan sp y entry según la ABI ILP32?
-     *   - Cargar el SP que pide el FW y SALTAR a su Reset_Handler.
-     *   - Pregunta: ¿salto con link (jalr ra) o sin link (jr)? ¿Qué conviene
-     *     dejar en ra?
-     */
+    mv      sp, a0
+    la      ra, bl_unexpected
+    jr      a1
 
-    j       bl_unexpected
     .size   bl_jump, . - bl_jump
+
+    /*
+     * La ABI pasa el primer argumento en a0 y el segundo en a1.
+     * Cargamos sp desde a0 y transferimos el control a la direccion de a1.
+     * Usamos jr porque la aplicacion no debe retornar al llamador del BL.
+     * Dejamos bl_unexpected en ra como destino de un retorno inesperado.
+    */
 
 /* ------------------------------------------------------------------------ */
 /*  bl_unexpected: vector inesperado -> FAIL + trap   (YA ESTÁ HECHO)       */
@@ -83,6 +100,11 @@ bl_unexpected:
 bl_halt:
     ebreak                          /* Pregunta: ¿por qué hace falta el ebreak si ya */
                                     /* dejamos 0xBAD en REG_FW_STATUS?               */
+                                    /*
+                                     * El BL no escribe 0xFF porque el testbench lo interpreta como
+                                     * finalización exitosa de la prueba. Validar la imagen todavía
+                                     * no demuestra que la aplicación se haya ejecutado correctamente.
+                                    */
 1:  j       1b
     .size   bl_halt, . - bl_halt
     .size   bl_unexpected, . - bl_unexpected
