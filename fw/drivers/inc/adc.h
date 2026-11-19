@@ -4,14 +4,17 @@
 #include <stdint.h>
 
 #define ADC_MODE_SINGLE   1u
-#define ADC_MODE_CIRCULAR 2u
+#define ADC_MODE_CIRCULAR 3u
 
 /* Configurar e iniciar con el ADC inactivo. */
 void adc_init(uint32_t clk_div);
 void set_adc_clk_divider(uint32_t clk_div);
 void adc_start(uint8_t adc_mode);
 
-/* Consulta inmediata del indicador de mitad de captura. */
+/*
+ * Espera bloqueante hasta el indicador de mitad de captura.
+ * Llamar despues de iniciar la adquisicion y antes de que termine.
+ */
 int adc_half_done(void);
 
 /* Espera bloqueante. Requiere una adquisicion iniciada. */

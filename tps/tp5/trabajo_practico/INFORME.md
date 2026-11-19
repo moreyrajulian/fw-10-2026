@@ -246,8 +246,9 @@ contenido en estos casos.
 ## Hito 5 - Driver ADC
 
 Se implementaron `adc_init()`, `adc_start()`, `adc_half_done()`,
-`adc_done()` y `adc_read()`. También se incorporó
-`set_adc_clk_divider()`, utilizada por la prueba integrada.
+`adc_done()` y `adc_read()`. Se conservó `set_adc_clk_divider()`, utilizada por la versión
+anterior de la prueba integrada. El test oficial actualizado
+configura el divisor mediante `adc_init()`.
 
 El acceso a los registros quedó encapsulado en `adc.c`.
 
@@ -261,8 +262,12 @@ finalización y copia al destino hasta 256 muestras. Devuelve
 la cantidad copiada. Para puntero nulo o longitud cero retorna
 cero sin iniciar una adquisición.
 
-`adc_done()` realiza una espera bloqueante y `adc_half_done()`
-consulta inmediatamente el indicador de mitad de captura.
+`adc_half_done()` y `adc_done()` realizan esperas bloqueantes
+sobre los indicadores de mitad y finalización de captura,
+respectivamente. `adc_half_done()` debe llamarse después de
+iniciar la adquisición y antes de que termine, porque el RTL
+desactiva el indicador de mitad al completar la captura.
+
 La configuración y el inicio requieren el ADC inactivo.
 
 ### Validación
@@ -399,3 +404,64 @@ que completó `CHECK PASS (14/14)`.
 
 Con esta ejecución se completó la validación final solicitada
 por la consigna.
+
+### Adaptación del ADC
+
+Se modificó `adc_half_done()` para que espere mediante polling
+hasta la activación del indicador de mitad de captura.
+
+Se corrigió `ADC_MODE_CIRCULAR` a `3`, combinando el bit de
+inicio y el bit de modo circular.
+
+Se agregó una comprobación de media captura con divisor 255:
+al retornar `adc_half_done()`, el indicador de mitad estaba
+activo y la adquisición todavía no había finalizado. Luego se
+esperó su finalización mediante `adc_done()`.
+
+La prueba ADC terminó con `ADC TEST PASS` y `RESULT: PASS`,
+con CRC esperado y calculado iguales a `0xD9`.
+Esta prueba utiliza captura única; no valida el funcionamiento
+continuo del modo circular.
+
+### Validación posterior a la actualización
+
+Se ejecutaron:
+
+    make clean
+    make build_project_config
+    make fw TARGET=test_drivers
+    make sim
+    make test_uart_serial
+    make -C fw sim TARGET=main
+
+Resultados:
+
+| Prueba | Resultado | CRC |
+|---|---|---|
+| Test integrado actualizado | PASS, sin identificadores de falla Txx | 0x1C |
+| UART1 | CHECK PASS (14/14) y RESULT: PASS | 0x98 |
+| Demo integrada | TP5 DEMO PASS y RESULT: PASS | 0x49 |
+
+La demo mostró `DMA OK`, `ADC OK` y la progresión de LED
+`0x01 → 0x03 → 0x07 → 0x0F`.
+
+Estas ejecuciones complementan la evidencia de los hitos
+anteriores y corresponden a la versión actualizada del TP5.
+
+### Evidencia de las nuevas ejecuciones
+
+**ADC: validación de la espera hasta media captura**
+
+![evidencia](./imagenes/actualizacion-adc.png)
+
+**Prueba integrada actualizada**
+
+![evidencia](./imagenes/actualizacion-integrada.png)
+
+**UART1 después de integrar los cambios**
+
+![evidencia](./imagenes/actualizacion-uart1.png)
+
+**Demo integrada después de la actualización**
+
+![evidencia](./imagenes/actualizacion-demo.png)

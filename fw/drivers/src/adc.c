@@ -45,7 +45,10 @@ void adc_start(uint8_t adc_mode)
 
 int adc_half_done(void)
 {
-    return (REG_ADC_STATUS & ADC_STATUS_HALF_DONE) != 0u;
+    while ((REG_ADC_STATUS & ADC_STATUS_HALF_DONE) == 0u) {
+    }
+
+    return 1;
 }
 
 int adc_done(void)

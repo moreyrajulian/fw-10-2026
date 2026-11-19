@@ -71,6 +71,22 @@ int main(void)
     adc_init(TEST_DIVIDER);
     print_str("ADC TEST BEGIN\n");
 
+    /* Dar tiempo para observar la mitad antes de completar la captura. */
+    adc_init(255u);
+    adc_start(ADC_MODE_SINGLE);
+
+    int half_ready = adc_half_done();
+    uint32_t status_at_half = REG_ADC_STATUS;
+
+    check("half_done retorna listo", half_ready != 0);
+    check("indicador de mitad activo", (status_at_half & 1u) != 0u);
+    check("captura aun incompleta", (status_at_half & 2u) == 0u);
+
+    adc_done();
+    check("captura completa", (REG_ADC_STATUS & 2u) != 0u);
+
+    adc_init(TEST_DIVIDER);
+
     check("puntero nulo", adc_read(0, 8u) == 0u);
 
     prepare_buffer();
