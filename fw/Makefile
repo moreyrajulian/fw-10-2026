@@ -82,6 +82,7 @@ endif
 APP_FILES = $(sort $(foreach f,$(APP_LIBS) $(APP_SRC),$(call src_path,$(f))))
 # El BL usa print.c y la implementación CRC local (--gc-sections deja solo lo que usa)
 BL_SRC    = $(FW_DIR)/bootloader/bl_start.S $(FW_DIR)/bootloader/bl_main.c $(FW_LIB)/src/print.c $(FW_LIB)/src/strutils.c
+BL_SRC    += $(FW_DIR)/drivers/src/uart.c
 COMMON_DEPS = $(FW_DIR)/memory_map.ld $(FW_DIR)/fw_image.h $(FW_LIB)/inc/includes.h $(FW_DIR)/config.h $(FW_LIB)/inc/strutils.h \
               $(wildcard $(FW_DIR)/drivers/inc/*.h $(FW_DIR)/app/*.h)
 

@@ -35,3 +35,16 @@ clean:
 
 clean_sim:
 	rm -rf $(OBJ_DIR) *.vcd *.fst
+
+.PHONY: test_uart_serial
+
+test_uart_serial:
+	$(MAKE) -C $(FW_DIR) TARGET=test_uart_serial
+	$(VERILATOR) $(VER_FLAGS)
+	./$(OBJ_DIR)/V$(TOP) \
+		+UART1_SCRIPT=$(FW_DIR)/tests/test_uart_serial.txt \
+		+MAX_CYCLES=10000000 \
+		$(if $(filter 1,$(VERBOSE)),+VERBOSE) \
+		> $(FW_DIR)/build/test_uart_serial.log 2>&1
+	cat $(FW_DIR)/build/test_uart_serial.log
+	grep -q '^RESULT: PASS$$' $(FW_DIR)/build/test_uart_serial.log

@@ -6,6 +6,7 @@
 // means.
 
 #include "includes.h"
+#include "uart.h"
 
 // REG_UART_COMMAND : 
 //					   0x00 -> reset
@@ -14,43 +15,19 @@
 
 static void uart0_send(const char *buf, unsigned int n)
 {
-    if(n==0)
-        return;
-    if(n>REG_ARRAY_UART0_BUFF_OUT_SIZE)
-        n = REG_ARRAY_UART0_BUFF_OUT_SIZE;
-
-    while (!REG_UART0_TRANSMISION_DONE);
-
-    for (unsigned int i=0;i<n;i++)
-        REG_ARRAY_UART0_BUFF_OUT[i] = (unsigned int)(unsigned char)buf[i];
-
-    REG_UART0_SIZE_TO_TRANSMIT = n;
-    REG_UART0_START_TRANSMIT   = 1;
-    REG_UART0_START_TRANSMIT   = 0;
-
-    while (!REG_UART0_TRANSMISION_DONE);
+    for (unsigned int i = 0u; i < n; i++) {
+        uart_write_byte(buf[i]);
+    }
 }
 
 void print_chr(char ch)
 {
-    uart0_send(&ch,1);   
-//	REG_UART_COMMAND = 0;
-//    REG_UART_DATA = ch;
-//	REG_UART_COMMAND = 1;
+    uart_write_byte(ch);
 }
 
 void print_str(const char *p)
 {
-    unsigned int n=0;
-    while (p[n] != 0 && n < REG_ARRAY_UART0_BUFF_OUT_SIZE)
-        n++;
-    uart0_send(p,n);
-//    while (*p != 0){
-//		REG_UART_COMMAND = 0;
-//        REG_UART_DATA = *(p++);
-//		REG_UART_COMMAND = 1;
-//	}
-//	print_flush_buffer();
+    uart_write_str(p);
 }
 
 void print_dec(unsigned int val)

@@ -169,8 +169,12 @@ task automatic host_send_byte(input byte b, input bit bad_stop);
     end
     u_top.uart1_rx_line <= bad_stop ? 1'b0 : 1'b1;    // stop
     repeat (host_baud) @(posedge clk);
-    u_top.uart1_rx_line <= 1'b1;
-    if (bad_stop) repeat (host_baud) @(posedge clk);  // idle para que el DUT resincronice
+
+    if (bad_stop) begin
+        u_top.uart1_rx_line <= 1'b1;
+        repeat (host_baud) @(posedge clk);
+    end
+
     repeat (host_gap) @(posedge clk);
     if (verbose) $display("UART1 -> 0x%02x%s", b, bad_stop ? " (bad stop)" : "");
 endtask

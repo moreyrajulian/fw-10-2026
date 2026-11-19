@@ -20,12 +20,8 @@ static void uart0_send(const char *data, unsigned int n)
     }
 }
 
-void uart_init(uart_id_t uart)
+void uart_init(void)
 {
-    if (uart != UART_0) {
-        return;
-    }
-
     while (!REG_UART0_TRANSMISION_DONE) {
     }
 
@@ -33,18 +29,14 @@ void uart_init(uart_id_t uart)
     REG_UART0_SIZE_TO_TRANSMIT = 0u;
 }
 
-void uart_write_byte(uart_id_t uart, char c)
+void uart_write_byte(char c)
 {
-    if (uart != UART_0) {
-        return;
-    }
-
     uart0_send(&c, 1u);
 }
 
-void uart_write_str(uart_id_t uart, const char *s)
+void uart_write_str(const char *s)
 {
-    if (uart != UART_0 || s == 0) {
+    if (s == 0) {
         return;
     }
 

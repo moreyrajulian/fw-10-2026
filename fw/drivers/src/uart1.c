@@ -1,65 +1,84 @@
-/* Driver de la UART1 serie.
- *
- * HITO 3.b: completar los cuerpos marcados con TODO usando los registros de
- *         datasheets/UART1_DATASHEET.md (REG_UART1_*, definidos en config.h).
- * TP6: completar uart1_set_rts().
- *
- * Hoy los cuerpos no hacen nada (solo para que el proyecto compile): el check
- * del hito 3.b tiene que fallar hasta que los implementes.
- */
 #include "uart1.h"
 
 void uart1_init(uint32_t baud_div)
 {
-    /* TODO hito 3.b: programar BAUD_DIV y limpiar los flags de error. */
-    (void)baud_div;
+    REG_UART1_BAUD_DIV = baud_div;
+
+    /* Establecer RTS = 0 y limpiar los errores con una escritura. */
+    REG_UART1_CTRL = UART1_CTRL_CLR_ERR;
 }
 
 uint32_t uart1_rx_level(void)
 {
-    /* TODO hito 3.b: cantidad de bytes en el FIFO RX (ver STATUS). */
-    return 0;
+    uint32_t status = REG_UART1_STATUS;
+
+    return UART1_ST_RX_LEVEL(status);
 }
 
 int uart1_getc(uint8_t *b)
 {
-    /* TODO hito 3.b: leer RX_DATA (leer saca un byte del FIFO) y devolver 1 si el
-     * bit VALID estaba en 1. Si no, devolver 0 sin tocar *b. */
-    (void)b;
-    return 0;
+    if (b == 0) {
+        return 0;
+    }
+
+    /* Cada lectura valida extrae un byte de la FIFO. */
+    uint32_t data = REG_UART1_RX_DATA;
+
+    if ((data & UART1_RX_VALID) == 0u) {
+        return 0;
+    }
+
+    *b = (uint8_t)data;
+    return 1;
 }
 
 void uart1_putc(uint8_t b)
 {
-    /* TODO hito 3.b: esperar a que el FIFO TX tenga lugar y escribir TX_DATA. */
-    (void)b;
+    while ((REG_UART1_STATUS & UART1_ST_TX_FULL) != 0u) {
+    }
+
+    REG_UART1_TX_DATA = b;
 }
 
 void uart1_write(const uint8_t *buf, uint32_t n)
 {
-    /* TODO hito 3.b */
-    (void)buf;
-    (void)n;
+    if (buf == 0) {
+        return;
+    }
+
+    for (uint32_t i = 0u; i < n; i++) {
+        uart1_putc(buf[i]);
+    }
 }
 
 int uart1_tx_idle(void)
 {
-    /* TODO hito 3.b */
-    return 0;
+    return (REG_UART1_STATUS & UART1_ST_TX_IDLE) != 0u;
 }
 
 uint32_t uart1_errors(void)
 {
-    /* TODO hito 3.b: UART1_ERR_FRAME / UART1_ERR_OVERRUN segun el STATUS. */
-    return 0;
+    uint32_t status = REG_UART1_STATUS;
+    uint32_t errors = 0u;
+
+    if ((status & UART1_ST_FRAME_ERR) != 0u) {
+        errors |= UART1_ERR_FRAME;
+    }
+
+    if ((status & UART1_ST_OVERRUN) != 0u) {
+        errors |= UART1_ERR_OVERRUN;
+    }
+
+    return errors;
 }
 
 void uart1_clear_errors(void)
 {
-    /* TODO hito 3.b: pulsar CLR_ERR en CTRL sin cambiar el estado de RTS. */
-}
+    uint32_t rts = REG_UART1_CTRL & UART1_CTRL_RTS;
 
-/* ---- TP6 ---- */
+    /* La escritura genera el pulso CLR_ERR y conserva RTS. */
+    REG_UART1_CTRL = rts | UART1_CTRL_CLR_ERR;
+}
 
 void uart1_set_rts(int ready)
 {
